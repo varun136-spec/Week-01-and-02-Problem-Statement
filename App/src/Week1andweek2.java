@@ -1,65 +1,154 @@
 public class Week1andweek2 {
 
+    static final int TOTAL_SPOTS = 500;
 
-    static java.util.HashMap<String, Integer> queryFreq = new java.util.HashMap<>();
+    static Vehicle[] parkingLot = new Vehicle[TOTAL_SPOTS];
 
+    static int totalVehicles = 0;
+    static long totalParkingTime = 0;
 
-    public static void addQuery(String query) {
+    static class Vehicle {
 
-        queryFreq.put(query, queryFreq.getOrDefault(query, 0) + 1);
+        String licensePlate;
+        long entryTime;
+
+        Vehicle(String plate) {
+            licensePlate = plate;
+            entryTime = System.currentTimeMillis();
+        }
     }
 
+    // Hash function
+    public static int hash(String plate) {
+        return Math.abs(plate.hashCode()) % TOTAL_SPOTS;
+    }
 
-    public static java.util.List<String> getSuggestions(String prefix) {
+    // Park vehicle using linear probing
+    public static int parkVehicle(String plate) {
 
-        java.util.List<java.util.Map.Entry<String, Integer>> matches =
-                new java.util.ArrayList<>();
+        int index = hash(plate);
+        int start = index;
 
+        while (parkingLot[index] != null) {
+            index = (index + 1) % TOTAL_SPOTS;
 
-        for (java.util.Map.Entry<String, Integer> entry : queryFreq.entrySet()) {
-
-            if (entry.getKey().startsWith(prefix)) {
-                matches.add(entry);
+            if (index == start) {
+                System.out.println("Parking lot full");
+                return -1;
             }
         }
 
+        parkingLot[index] = new Vehicle(plate);
+        totalVehicles++;
 
-        matches.sort((a, b) -> b.getValue() - a.getValue());
+        System.out.println("Vehicle parked at spot: " + index);
+        return index;
+    }
 
+    // Remove vehicle and calculate bill
+    public static void exitVehicle(String plate) {
 
-        java.util.List<String> suggestions = new java.util.ArrayList<>();
+        int index = hash(plate);
+        int start = index;
 
-        int count = 0;
-        for (java.util.Map.Entry<String, Integer> e : matches) {
-            suggestions.add(e.getKey());
-            count++;
-            if (count == 10) break;
+        while (parkingLot[index] != null) {
+
+            if (parkingLot[index].licensePlate.equals(plate)) {
+
+                long exitTime = System.currentTimeMillis();
+                long duration = (exitTime - parkingLot[index].entryTime) / 1000;
+
+                totalParkingTime += duration;
+
+                parkingLot[index] = null;
+
+                System.out.println("Vehicle exited from spot " + index);
+                System.out.println("Parking duration: " + duration + " seconds");
+
+                return;
+            }
+
+            index = (index + 1) % TOTAL_SPOTS;
+
+            if (index == start) break;
         }
 
-        return suggestions;
+        System.out.println("Vehicle not found");
+    }
+
+    // Find nearest empty spot
+    public static int nearestAvailableSpot() {
+
+        for (int i = 0; i < TOTAL_SPOTS; i++) {
+            if (parkingLot[i] == null) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    // Show parking statistics
+    public static void showStats() {
+
+        int occupied = 0;
+
+        for (int i = 0; i < TOTAL_SPOTS; i++) {
+            if (parkingLot[i] != null) {
+                occupied++;
+            }
+        }
+
+        double occupancyRate = (occupied * 100.0) / TOTAL_SPOTS;
+
+        System.out.println("Occupied spots: " + occupied);
+        System.out.println("Occupancy rate: " + occupancyRate + "%");
+
+        if (totalVehicles > 0) {
+            System.out.println("Average parking time: " + (totalParkingTime / totalVehicles) + " seconds");
+        }
     }
 
     public static void main(String[] args) {
 
         java.util.Scanner sc = new java.util.Scanner(System.in);
 
-        // Example search data
-        addQuery("machine learning tutorial");
-        addQuery("machine learning course");
-        addQuery("machine learning tutorial");
-        addQuery("machine learning python");
-        addQuery("machine learning projects");
-        addQuery("machine learning tutorial");
-        addQuery("machine learning examples");
+        System.out.println("1. Park Vehicle");
+        System.out.println("2. Exit Vehicle");
+        System.out.println("3. Nearest Spot");
+        System.out.println("4. Show Stats");
 
-        System.out.print("Enter search prefix: ");
-        String prefix = sc.nextLine();
+        int choice = sc.nextInt();
+        sc.nextLine();
 
-        java.util.List<String> suggestions = getSuggestions(prefix);
+        if (choice == 1) {
 
-        System.out.println("Suggestions:");
-        for (String s : suggestions) {
-            System.out.println(s);
+            System.out.print("Enter license plate: ");
+            String plate = sc.nextLine();
+
+            parkVehicle(plate);
+        }
+
+        else if (choice == 2) {
+
+            System.out.print("Enter license plate: ");
+            String plate = sc.nextLine();
+
+            exitVehicle(plate);
+        }
+
+        else if (choice == 3) {
+
+            int spot = nearestAvailableSpot();
+
+            if (spot != -1)
+                System.out.println("Nearest available spot: " + spot);
+            else
+                System.out.println("Parking full");
+        }
+
+        else if (choice == 4) {
+            showStats();
         }
 
         sc.close();
