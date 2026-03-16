@@ -1,90 +1,78 @@
 public class Week1andweek2 {
 
-    // Cache capacity
-    static final int MAX_CACHE_SIZE = 5;
 
-    // Cache storage with LRU behavior
-    static java.util.LinkedHashMap<String, CacheEntry> cache =
-            new java.util.LinkedHashMap<String, CacheEntry>(16, 0.75f, true) {
-                protected boolean removeEldestEntry(java.util.Map.Entry<String, CacheEntry> eldest) {
-                    return size() > MAX_CACHE_SIZE;
-                }
-            };
+    static java.util.HashMap<String, java.util.List<String>> ngramIndex = new java.util.HashMap<>();
 
-    static int cacheHits = 0;
-    static int cacheMisses = 0;
 
-    // Cache entry class
-    static class CacheEntry {
-        String ip;
-        long expiryTime;
+    public static java.util.List<String> generateNGrams(String text, int n) {
 
-        CacheEntry(String ip, int ttlSeconds) {
-            this.ip = ip;
-            this.expiryTime = System.currentTimeMillis() + (ttlSeconds * 1000);
+        java.util.List<String> grams = new java.util.ArrayList<>();
+
+        String[] words = text.split(" ");
+
+        for (int i = 0; i <= words.length - n; i++) {
+
+            String gram = "";
+
+            for (int j = 0; j < n; j++) {
+                gram += words[i + j] + " ";
+            }
+
+            grams.add(gram.trim());
         }
 
-        boolean isExpired() {
-            return System.currentTimeMillis() > expiryTime;
+        return grams;
+    }
+
+    // Store document n-grams in hash table
+    public static void addDocument(String docId, String text, int n) {
+
+        java.util.List<String> grams = generateNGrams(text, n);
+
+        for (String gram : grams) {
+
+            if (!ngramIndex.containsKey(gram)) {
+                ngramIndex.put(gram, new java.util.ArrayList<String>());
+            }
+
+            ngramIndex.get(gram).add(docId);
         }
     }
 
-    // Simulated upstream DNS lookup
-    public static String queryUpstreamDNS(String domain) {
-        System.out.println("Querying upstream DNS for " + domain);
-        return "192.168.1." + new java.util.Random().nextInt(255);
-    }
+    // Calculate similarity between two documents
+    public static double calculateSimilarity(String doc1, String doc2, int n) {
 
-    // Resolve domain
-    public static String resolve(String domain, int ttl) {
+        java.util.List<String> grams1 = generateNGrams(doc1, n);
+        java.util.List<String> grams2 = generateNGrams(doc2, n);
 
-        if (cache.containsKey(domain)) {
+        int matchCount = 0;
 
-            CacheEntry entry = cache.get(domain);
-
-            if (!entry.isExpired()) {
-                cacheHits++;
-                return entry.ip;
-            } else {
-                cache.remove(domain);
+        for (String g : grams1) {
+            if (grams2.contains(g)) {
+                matchCount++;
             }
         }
 
-        cacheMisses++;
+        double similarity = (matchCount * 100.0) / grams1.size();
 
-        String ip = queryUpstreamDNS(domain);
-
-        cache.put(domain, new CacheEntry(ip, ttl));
-
-        return ip;
-    }
-
-    // Show statistics
-    public static void showStats() {
-
-        int total = cacheHits + cacheMisses;
-
-        System.out.println("\nCache Hits: " + cacheHits);
-        System.out.println("Cache Misses: " + cacheMisses);
-
-        if (total > 0) {
-            double ratio = (cacheHits * 100.0) / total;
-            System.out.println("Hit Ratio: " + ratio + "%");
-        }
+        return similarity;
     }
 
     public static void main(String[] args) {
 
         java.util.Scanner sc = new java.util.Scanner(System.in);
 
-        System.out.print("Enter domain name: ");
-        String domain = sc.nextLine();
+        int n = 3; // 3-word n-grams
 
-        String ip = resolve(domain, 10); // TTL = 10 seconds
+        String doc1 = "machine learning is very powerful";
+        String doc2 = "machine learning is a powerful tool";
 
-        System.out.println("Resolved IP: " + ip);
+        addDocument("Doc1", doc1, n);
+        addDocument("Doc2", doc2, n);
 
-        showStats();
+        double similarity = calculateSimilarity(doc1, doc2, n);
+
+        System.out.println("Similarity: " + similarity + "%");
 
         sc.close();
     }
