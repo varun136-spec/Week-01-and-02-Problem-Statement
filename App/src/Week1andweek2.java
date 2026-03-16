@@ -1,59 +1,51 @@
 public class Week1andweek2 {
 
+    // Product stock storage
+    static java.util.HashMap<String, Integer> stock = new java.util.HashMap<>();
 
-    static java.util.HashSet<String> usernames = new java.util.HashSet<>();
+    // Waiting list for customers
+    static java.util.Queue<String> waitingList = new java.util.LinkedList<>();
 
-
-    static java.util.HashMap<String, Integer> popularity = new java.util.HashMap<>();
-
-
-    public static boolean checkAvailability(String username) {
-
-        popularity.put(username, popularity.getOrDefault(username, 0) + 1);
-
-        return !usernames.contains(username);
+    // Check stock availability
+    public static int checkStock(String product) {
+        return stock.getOrDefault(product, 0);
     }
 
+    // Purchase product (thread-safe)
+    public synchronized static void purchase(String product, String customer) {
 
-    public static java.util.List<String> suggestUsernames(String username) {
+        int available = stock.getOrDefault(product, 0);
 
-        java.util.List<String> suggestions = new java.util.ArrayList<>();
-
-        for (int i = 1; i <= 5; i++) {
-            String suggestion = username + i;
-            if (!usernames.contains(suggestion)) {
-                suggestions.add(suggestion);
-            }
+        if (available > 0) {
+            stock.put(product, available - 1);
+            System.out.println(customer + " successfully purchased " + product);
         }
-
-        suggestions.add(username + "_official");
-        suggestions.add(username + "_123");
-
-        return suggestions;
+        else {
+            waitingList.add(customer);
+            System.out.println(customer + " added to waiting list");
+        }
     }
 
     public static void main(String[] args) {
 
         java.util.Scanner sc = new java.util.Scanner(System.in);
 
-        usernames.add("varun");
-        usernames.add("john");
-        usernames.add("alex");
+        // Flash sale product with limited stock
+        stock.put("Laptop", 100);
 
-        System.out.print("Enter username: ");
-        String username = sc.nextLine();
+        System.out.println("Flash Sale Product: Laptop");
+        System.out.println("Current Stock: " + checkStock("Laptop"));
 
-        if (checkAvailability(username)) {
-            System.out.println("Username available!");
-            usernames.add(username);
-        } else {
-            System.out.println("Username already taken.");
-            System.out.println("Suggested usernames: " + suggestUsernames(username));
-        }
+        System.out.print("Enter customer name: ");
+        String customer = sc.nextLine();
 
-        System.out.println("\nUsername attempt popularity:");
-        for (String name : popularity.keySet()) {
-            System.out.println(name + " -> " + popularity.get(name));
+        purchase("Laptop", customer);
+
+        System.out.println("Remaining Stock: " + checkStock("Laptop"));
+
+        System.out.println("\nWaiting List:");
+        for(String c : waitingList){
+            System.out.println(c);
         }
 
         sc.close();
