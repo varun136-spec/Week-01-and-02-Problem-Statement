@@ -1,66 +1,65 @@
 public class Week1andweek2 {
 
-    // Maximum requests per hour
-    static final int MAX_REQUESTS = 1000;
 
-    // Store client buckets
-    static java.util.HashMap<String, TokenBucket> clients = new java.util.HashMap<>();
+    static java.util.HashMap<String, Integer> queryFreq = new java.util.HashMap<>();
 
-    // Token bucket class
-    static class TokenBucket {
 
-        int tokens;
-        long lastRefillTime;
+    public static void addQuery(String query) {
 
-        TokenBucket() {
-            tokens = MAX_REQUESTS;
-            lastRefillTime = System.currentTimeMillis();
-        }
-
-        boolean allowRequest() {
-
-            long currentTime = System.currentTimeMillis();
-
-            // Refill tokens every hour
-            if (currentTime - lastRefillTime >= 3600000) {
-                tokens = MAX_REQUESTS;
-                lastRefillTime = currentTime;
-            }
-
-            if (tokens > 0) {
-                tokens--;
-                return true;
-            }
-
-            return false;
-        }
+        queryFreq.put(query, queryFreq.getOrDefault(query, 0) + 1);
     }
 
-    // Check request for a client
-    public static boolean checkRateLimit(String clientId) {
 
-        if (!clients.containsKey(clientId)) {
-            clients.put(clientId, new TokenBucket());
+    public static java.util.List<String> getSuggestions(String prefix) {
+
+        java.util.List<java.util.Map.Entry<String, Integer>> matches =
+                new java.util.ArrayList<>();
+
+
+        for (java.util.Map.Entry<String, Integer> entry : queryFreq.entrySet()) {
+
+            if (entry.getKey().startsWith(prefix)) {
+                matches.add(entry);
+            }
         }
 
-        TokenBucket bucket = clients.get(clientId);
 
-        return bucket.allowRequest();
+        matches.sort((a, b) -> b.getValue() - a.getValue());
+
+
+        java.util.List<String> suggestions = new java.util.ArrayList<>();
+
+        int count = 0;
+        for (java.util.Map.Entry<String, Integer> e : matches) {
+            suggestions.add(e.getKey());
+            count++;
+            if (count == 10) break;
+        }
+
+        return suggestions;
     }
 
     public static void main(String[] args) {
 
         java.util.Scanner sc = new java.util.Scanner(System.in);
 
-        System.out.print("Enter client API key: ");
-        String client = sc.nextLine();
+        // Example search data
+        addQuery("machine learning tutorial");
+        addQuery("machine learning course");
+        addQuery("machine learning tutorial");
+        addQuery("machine learning python");
+        addQuery("machine learning projects");
+        addQuery("machine learning tutorial");
+        addQuery("machine learning examples");
 
-        boolean allowed = checkRateLimit(client);
+        System.out.print("Enter search prefix: ");
+        String prefix = sc.nextLine();
 
-        if (allowed) {
-            System.out.println("Request Allowed");
-        } else {
-            System.out.println("Rate limit exceeded. Try again later.");
+        java.util.List<String> suggestions = getSuggestions(prefix);
+
+        System.out.println("Suggestions:");
+        for (String s : suggestions) {
+            System.out.println(s);
         }
 
         sc.close();
