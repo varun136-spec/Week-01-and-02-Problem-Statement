@@ -1,156 +1,128 @@
 public class Week1andweek2 {
 
-    static final int TOTAL_SPOTS = 500;
 
-    static Vehicle[] parkingLot = new Vehicle[TOTAL_SPOTS];
+    static class Transaction {
+        int amount;
+        String merchant;
+        String account;
+        long time;
 
-    static int totalVehicles = 0;
-    static long totalParkingTime = 0;
-
-    static class Vehicle {
-
-        String licensePlate;
-        long entryTime;
-
-        Vehicle(String plate) {
-            licensePlate = plate;
-            entryTime = System.currentTimeMillis();
+        Transaction(int amount, String merchant, String account) {
+            this.amount = amount;
+            this.merchant = merchant;
+            this.account = account;
+            this.time = System.currentTimeMillis();
         }
     }
 
-    // Hash function
-    public static int hash(String plate) {
-        return Math.abs(plate.hashCode()) % TOTAL_SPOTS;
-    }
 
-    // Park vehicle using linear probing
-    public static int parkVehicle(String plate) {
+    public static void twoSum(int[] arr, int target) {
 
-        int index = hash(plate);
-        int start = index;
+        java.util.HashMap<Integer, Integer> map = new java.util.HashMap<>();
 
-        while (parkingLot[index] != null) {
-            index = (index + 1) % TOTAL_SPOTS;
+        for (int num : arr) {
 
-            if (index == start) {
-                System.out.println("Parking lot full");
-                return -1;
-            }
-        }
+            int complement = target - num;
 
-        parkingLot[index] = new Vehicle(plate);
-        totalVehicles++;
-
-        System.out.println("Vehicle parked at spot: " + index);
-        return index;
-    }
-
-    // Remove vehicle and calculate bill
-    public static void exitVehicle(String plate) {
-
-        int index = hash(plate);
-        int start = index;
-
-        while (parkingLot[index] != null) {
-
-            if (parkingLot[index].licensePlate.equals(plate)) {
-
-                long exitTime = System.currentTimeMillis();
-                long duration = (exitTime - parkingLot[index].entryTime) / 1000;
-
-                totalParkingTime += duration;
-
-                parkingLot[index] = null;
-
-                System.out.println("Vehicle exited from spot " + index);
-                System.out.println("Parking duration: " + duration + " seconds");
-
+            if (map.containsKey(complement)) {
+                System.out.println("Pair found: " + num + " + " + complement + " = " + target);
                 return;
             }
 
-            index = (index + 1) % TOTAL_SPOTS;
-
-            if (index == start) break;
+            map.put(num, 1);
         }
 
-        System.out.println("Vehicle not found");
+        System.out.println("No pair found");
     }
 
-    // Find nearest empty spot
-    public static int nearestAvailableSpot() {
+    // Two-Sum within time window (1 hour)
+    public static void twoSumTimeWindow(java.util.List<Transaction> list, int target) {
 
-        for (int i = 0; i < TOTAL_SPOTS; i++) {
-            if (parkingLot[i] == null) {
-                return i;
+        java.util.HashMap<Integer, Transaction> map = new java.util.HashMap<>();
+
+        for (Transaction t : list) {
+
+            int complement = target - t.amount;
+
+            if (map.containsKey(complement)) {
+
+                Transaction prev = map.get(complement);
+
+                if (Math.abs(t.time - prev.time) <= 3600000) {
+                    System.out.println("Suspicious pair detected: " + t.amount + " + " + prev.amount);
+                }
+            }
+
+            map.put(t.amount, t);
+        }
+    }
+
+    // K-Sum (recursive approach)
+    public static boolean kSum(int[] arr, int start, int k, int target) {
+
+        if (k == 2) {
+            java.util.HashSet<Integer> set = new java.util.HashSet<>();
+
+            for (int i = start; i < arr.length; i++) {
+
+                if (set.contains(target - arr[i])) {
+                    return true;
+                }
+
+                set.add(arr[i]);
+            }
+
+            return false;
+        }
+
+        for (int i = start; i < arr.length; i++) {
+
+            if (kSum(arr, i + 1, k - 1, target - arr[i])) {
+                return true;
             }
         }
 
-        return -1;
+        return false;
     }
 
-    // Show parking statistics
-    public static void showStats() {
 
-        int occupied = 0;
+    public static void detectDuplicates(java.util.List<Transaction> list) {
 
-        for (int i = 0; i < TOTAL_SPOTS; i++) {
-            if (parkingLot[i] != null) {
-                occupied++;
+        java.util.HashSet<String> set = new java.util.HashSet<>();
+
+        for (Transaction t : list) {
+
+            String key = t.amount + "-" + t.merchant;
+
+            if (set.contains(key)) {
+                System.out.println("Duplicate payment detected: " + key);
+            } else {
+                set.add(key);
             }
-        }
-
-        double occupancyRate = (occupied * 100.0) / TOTAL_SPOTS;
-
-        System.out.println("Occupied spots: " + occupied);
-        System.out.println("Occupancy rate: " + occupancyRate + "%");
-
-        if (totalVehicles > 0) {
-            System.out.println("Average parking time: " + (totalParkingTime / totalVehicles) + " seconds");
         }
     }
 
     public static void main(String[] args) {
 
-        java.util.Scanner sc = new java.util.Scanner(System.in);
+        int[] transactions = {100, 200, 300, 400, 500};
 
-        System.out.println("1. Park Vehicle");
-        System.out.println("2. Exit Vehicle");
-        System.out.println("3. Nearest Spot");
-        System.out.println("4. Show Stats");
+        System.out.println("Classic Two-Sum:");
+        twoSum(transactions, 700);
 
-        int choice = sc.nextInt();
-        sc.nextLine();
+        java.util.List<Transaction> list = new java.util.ArrayList<>();
 
-        if (choice == 1) {
+        list.add(new Transaction(500, "Amazon", "A1"));
+        list.add(new Transaction(200, "Amazon", "A2"));
+        list.add(new Transaction(300, "Flipkart", "A3"));
+        list.add(new Transaction(500, "Amazon", "A4"));
 
-            System.out.print("Enter license plate: ");
-            String plate = sc.nextLine();
+        System.out.println("\nTwo-Sum with Time Window:");
+        twoSumTimeWindow(list, 700);
 
-            parkVehicle(plate);
-        }
+        System.out.println("\nK-Sum result (3 numbers sum to 1000): " +
+                kSum(transactions, 0, 3, 1000));
 
-        else if (choice == 2) {
-
-            System.out.print("Enter license plate: ");
-            String plate = sc.nextLine();
-
-            exitVehicle(plate);
-        }
-
-        else if (choice == 3) {
-
-            int spot = nearestAvailableSpot();
-
-            if (spot != -1)
-                System.out.println("Nearest available spot: " + spot);
-            else
-                System.out.println("Parking full");
-        }
-
-        else if (choice == 4) {
-            showStats();
-        }
-
-        sc.close();
+        System.out.println("\nDuplicate Detection:");
+        detectDuplicates(list);
     }
 }
