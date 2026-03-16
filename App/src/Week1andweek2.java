@@ -1,28 +1,75 @@
 public class Week1andweek2 {
 
-    // Product stock storage
-    static java.util.HashMap<String, Integer> stock = new java.util.HashMap<>();
+    // Cache capacity
+    static final int MAX_CACHE_SIZE = 5;
 
-    // Waiting list for customers
-    static java.util.Queue<String> waitingList = new java.util.LinkedList<>();
+    // Cache storage with LRU behavior
+    static java.util.LinkedHashMap<String, CacheEntry> cache =
+            new java.util.LinkedHashMap<String, CacheEntry>(16, 0.75f, true) {
+                protected boolean removeEldestEntry(java.util.Map.Entry<String, CacheEntry> eldest) {
+                    return size() > MAX_CACHE_SIZE;
+                }
+            };
 
-    // Check stock availability
-    public static int checkStock(String product) {
-        return stock.getOrDefault(product, 0);
+    static int cacheHits = 0;
+    static int cacheMisses = 0;
+
+    // Cache entry class
+    static class CacheEntry {
+        String ip;
+        long expiryTime;
+
+        CacheEntry(String ip, int ttlSeconds) {
+            this.ip = ip;
+            this.expiryTime = System.currentTimeMillis() + (ttlSeconds * 1000);
+        }
+
+        boolean isExpired() {
+            return System.currentTimeMillis() > expiryTime;
+        }
     }
 
-    // Purchase product (thread-safe)
-    public synchronized static void purchase(String product, String customer) {
+    // Simulated upstream DNS lookup
+    public static String queryUpstreamDNS(String domain) {
+        System.out.println("Querying upstream DNS for " + domain);
+        return "192.168.1." + new java.util.Random().nextInt(255);
+    }
 
-        int available = stock.getOrDefault(product, 0);
+    // Resolve domain
+    public static String resolve(String domain, int ttl) {
 
-        if (available > 0) {
-            stock.put(product, available - 1);
-            System.out.println(customer + " successfully purchased " + product);
+        if (cache.containsKey(domain)) {
+
+            CacheEntry entry = cache.get(domain);
+
+            if (!entry.isExpired()) {
+                cacheHits++;
+                return entry.ip;
+            } else {
+                cache.remove(domain);
+            }
         }
-        else {
-            waitingList.add(customer);
-            System.out.println(customer + " added to waiting list");
+
+        cacheMisses++;
+
+        String ip = queryUpstreamDNS(domain);
+
+        cache.put(domain, new CacheEntry(ip, ttl));
+
+        return ip;
+    }
+
+    // Show statistics
+    public static void showStats() {
+
+        int total = cacheHits + cacheMisses;
+
+        System.out.println("\nCache Hits: " + cacheHits);
+        System.out.println("Cache Misses: " + cacheMisses);
+
+        if (total > 0) {
+            double ratio = (cacheHits * 100.0) / total;
+            System.out.println("Hit Ratio: " + ratio + "%");
         }
     }
 
@@ -30,23 +77,14 @@ public class Week1andweek2 {
 
         java.util.Scanner sc = new java.util.Scanner(System.in);
 
-        // Flash sale product with limited stock
-        stock.put("Laptop", 100);
+        System.out.print("Enter domain name: ");
+        String domain = sc.nextLine();
 
-        System.out.println("Flash Sale Product: Laptop");
-        System.out.println("Current Stock: " + checkStock("Laptop"));
+        String ip = resolve(domain, 10); // TTL = 10 seconds
 
-        System.out.print("Enter customer name: ");
-        String customer = sc.nextLine();
+        System.out.println("Resolved IP: " + ip);
 
-        purchase("Laptop", customer);
-
-        System.out.println("Remaining Stock: " + checkStock("Laptop"));
-
-        System.out.println("\nWaiting List:");
-        for(String c : waitingList){
-            System.out.println(c);
-        }
+        showStats();
 
         sc.close();
     }
