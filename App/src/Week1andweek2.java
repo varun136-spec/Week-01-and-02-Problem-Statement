@@ -1,79 +1,76 @@
 public class Week1andweek2 {
 
 
-    static java.util.HashMap<String, java.util.List<String>> ngramIndex = new java.util.HashMap<>();
+    static java.util.HashMap<String, Integer> pageViews = new java.util.HashMap<>();
 
 
-    public static java.util.List<String> generateNGrams(String text, int n) {
+    static java.util.HashMap<String, java.util.HashSet<String>> uniqueVisitors = new java.util.HashMap<>();
 
-        java.util.List<String> grams = new java.util.ArrayList<>();
 
-        String[] words = text.split(" ");
+    static java.util.HashMap<String, Integer> trafficSources = new java.util.HashMap<>();
 
-        for (int i = 0; i <= words.length - n; i++) {
 
-            String gram = "";
+    public static void processEvent(String page, String user, String source) {
 
-            for (int j = 0; j < n; j++) {
-                gram += words[i + j] + " ";
-            }
 
-            grams.add(gram.trim());
+        pageViews.put(page, pageViews.getOrDefault(page, 0) + 1);
+
+
+        if (!uniqueVisitors.containsKey(page)) {
+            uniqueVisitors.put(page, new java.util.HashSet<String>());
         }
+        uniqueVisitors.get(page).add(user);
 
-        return grams;
+
+        trafficSources.put(source, trafficSources.getOrDefault(source, 0) + 1);
     }
 
-    // Store document n-grams in hash table
-    public static void addDocument(String docId, String text, int n) {
 
-        java.util.List<String> grams = generateNGrams(text, n);
+    public static void showDashboard() {
 
-        for (String gram : grams) {
+        System.out.println("\n===== REAL TIME ANALYTICS DASHBOARD =====");
 
-            if (!ngramIndex.containsKey(gram)) {
-                ngramIndex.put(gram, new java.util.ArrayList<String>());
-            }
 
-            ngramIndex.get(gram).add(docId);
+        java.util.List<java.util.Map.Entry<String, Integer>> list =
+                new java.util.ArrayList<>(pageViews.entrySet());
+
+        list.sort((a, b) -> b.getValue() - a.getValue());
+
+        System.out.println("\nTop Pages:");
+        int count = 0;
+        for (java.util.Map.Entry<String, Integer> e : list) {
+            System.out.println(e.getKey() + " -> " + e.getValue() + " visits");
+            count++;
+            if (count == 10) break;
+        }
+
+        // Unique visitors
+        System.out.println("\nUnique Visitors per Page:");
+        for (String page : uniqueVisitors.keySet()) {
+            System.out.println(page + " -> " + uniqueVisitors.get(page).size());
+        }
+
+
+        System.out.println("\nTraffic Sources:");
+        for (String src : trafficSources.keySet()) {
+            System.out.println(src + " -> " + trafficSources.get(src));
         }
     }
 
-    // Calculate similarity between two documents
-    public static double calculateSimilarity(String doc1, String doc2, int n) {
+    public static void main(String[] args) throws Exception {
 
-        java.util.List<String> grams1 = generateNGrams(doc1, n);
-        java.util.List<String> grams2 = generateNGrams(doc2, n);
 
-        int matchCount = 0;
+        processEvent("/home", "user1", "Google");
+        processEvent("/sports", "user2", "Facebook");
+        processEvent("/home", "user3", "Direct");
+        processEvent("/politics", "user1", "Google");
+        processEvent("/home", "user1", "Facebook");
+        processEvent("/sports", "user4", "Google");
 
-        for (String g : grams1) {
-            if (grams2.contains(g)) {
-                matchCount++;
-            }
+        // Dashboard refresh every 5 seconds
+        while (true) {
+            showDashboard();
+            Thread.sleep(5000);
         }
-
-        double similarity = (matchCount * 100.0) / grams1.size();
-
-        return similarity;
-    }
-
-    public static void main(String[] args) {
-
-        java.util.Scanner sc = new java.util.Scanner(System.in);
-
-        int n = 3; // 3-word n-grams
-
-        String doc1 = "machine learning is very powerful";
-        String doc2 = "machine learning is a powerful tool";
-
-        addDocument("Doc1", doc1, n);
-        addDocument("Doc2", doc2, n);
-
-        double similarity = calculateSimilarity(doc1, doc2, n);
-
-        System.out.println("Similarity: " + similarity + "%");
-
-        sc.close();
     }
 }
